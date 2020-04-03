@@ -39,7 +39,7 @@ namespace videoPlayerApp.FFmpeg
             }
         }
 
-        [DllImport("kernal32", SetLastError = true)]
+        [DllImport("kernel32", SetLastError = true)]
         private static extern bool SetDllDirectory(String lpPathName);
     }
 }

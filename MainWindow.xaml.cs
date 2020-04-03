@@ -8,7 +8,6 @@ using System.Windows.Threading;
 using System.Drawing;
 using System.IO;
 
-
 using FFmpeg.AutoGen;
 using videoPlayerApp.FFmpeg.Decoder;
 using videoPlayerApp.FFmpeg;
@@ -41,8 +40,10 @@ namespace videoPlayerApp
 
         private unsafe void DecodeAllFramesToImages()
         {
+            _filepath = "test.mxf";
+
             String filepath = "";
-            if ( String.IsNullOrEmpty(_filepath))
+            if ( !String.IsNullOrEmpty(_filepath))
             {
                 filepath = _filepath;
             } else
@@ -64,16 +65,48 @@ namespace videoPlayerApp
                     while(vsd.TryDecodeNextFrame(out var frame) && activeThread)
                     {
                         var convertedFrame = vfc.Convert(frame);
-                        
+
+                        Bitmap bitmap;
+
+                        bitmap = new Bitmap(convertedFrame.width, convertedFrame.height, convertedFrame.linesize[0],
+                            System.Drawing.Imaging.PixelFormat.Format24bppRgb, (IntPtr)convertedFrame.data[0]);
+
+                        frameNumber++;
                     }
                 }
 
             }            
         }
 
+        void BitmapToImageSource(Bitmap bitmap)
+        {
+            dispatcher.BeginInvoke((Action)(() =>
+            {
+                using(MemoryStream memory = new MemoryStream())
+                {
+                    if ( thread.IsAlive)
+                    {
+                        bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                        memory.Position = 0;
+                        BitmapImage bitmapImage = new BitmapImage();
+                        bitmapImage.BeginInit();
+                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+
+                        bitmapImage.StreamSource = memory;
+                        bitmapImage.EndInit();
+
+                        image.Source = bitmapImage;
+                    }
+                }
+            }));
+        }
+
         private void Btn_Play_Click(object sender, RoutedEventArgs e)
         {
-
+            if ( thread.ThreadState == ThreadState.Unstarted)
+            {
+                thread.Start();
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
